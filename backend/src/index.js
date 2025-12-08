@@ -3,7 +3,12 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const { verificarConexion } = require('./config/database');
+// Usar PostgreSQL si DATABASE_URL está definida (producción), sino MySQL (desarrollo)
+const dbConfig = process.env.DATABASE_URL 
+  ? require('./config/database-postgres')
+  : require('./config/database');
+
+const { verificarConexion } = dbConfig;
 
 // Importar rutas
 const authRoutes = require('./routes/auth');

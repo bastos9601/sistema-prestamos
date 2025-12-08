@@ -1,0 +1,16 @@
+services:
+  - name: prestamos-backend
+    type: web
+    instance_type: nano
+    regions:
+      - was
+    ports:
+      - port: 3000
+        protocol: http
+    env:
+      - key: NODE_ENV
+        value: production
+    build:
+      buildpack: nodejs
+    run:
+      command: npm start

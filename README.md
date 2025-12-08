@@ -106,6 +106,7 @@ eas build --platform android --profile preview
 
 ## 📚 Documentación Completa
 
+### 📖 Instalación Local
 | Documento | Descripción |
 |-----------|-------------|
 | [`INICIO-RAPIDO.md`](INICIO-RAPIDO.md) | ⚡ Guía express de 5 minutos |
@@ -117,6 +118,16 @@ eas build --platform android --profile preview
 | [`RESUMEN-PROYECTO.md`](RESUMEN-PROYECTO.md) | 📊 Resumen completo |
 | [`backend/README.md`](backend/README.md) | 🔧 Documentación del API |
 | [`frontend/README.md`](frontend/README.md) | 📱 Documentación de la app |
+
+### ☁️ Despliegue en la Nube
+| Documento | Descripción |
+|-----------|-------------|
+| [`ELEGIR_PLATAFORMA.md`](ELEGIR_PLATAFORMA.md) | 🎯 Guía para elegir plataforma |
+| [`RAILWAY_PASO_A_PASO.md`](RAILWAY_PASO_A_PASO.md) | 🚂 Railway (MySQL) - Recomendado |
+| [`HEROKU_DESPLIEGUE.md`](HEROKU_DESPLIEGUE.md) | 🟣 Heroku (PostgreSQL) - Completo |
+| [`HEROKU_PASOS_RAPIDOS.md`](HEROKU_PASOS_RAPIDOS.md) | ⚡ Heroku - Guía rápida |
+| [`ALTERNATIVAS_GRATUITAS.md`](ALTERNATIVAS_GRATUITAS.md) | 🆓 Opciones gratuitas |
+| [`RAILWAY_CON_PLANETSCALE.md`](RAILWAY_CON_PLANETSCALE.md) | 🌍 Railway + PlanetScale |
 
 ## 🔐 Seguridad
 

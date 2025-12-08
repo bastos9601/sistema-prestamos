@@ -3,11 +3,17 @@
   "version": "1.0.0",
   "description": "API REST para sistema de gestión de préstamos",
   "main": "src/index.js",
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "crear-usuarios": "node scripts/crear-usuarios-prueba.js",
-    "init-db": "node scripts/inicializar-db.js"
+    "crear-usuarios-postgres": "node scripts/crear-admin-postgres.js",
+    "init-db": "node scripts/inicializar-db.js",
+    "verificar-supabase": "node scripts/verificar-supabase.js"
   },
   "keywords": [
     "prestamos",
@@ -26,7 +32,8 @@
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "mysql2": "^3.6.5"
+    "mysql2": "^3.6.5",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

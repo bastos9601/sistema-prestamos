@@ -5,16 +5,16 @@ exports.obtenerConfiguracion = async (req, res) => {
   try {
     const { clave } = req.params;
     
-    const [rows] = await pool.query(
-      'SELECT * FROM configuracion WHERE clave = ?',
+    const resultado = await pool.query(
+      'SELECT * FROM configuracion WHERE clave = $1',
       [clave]
     );
 
-    if (rows.length === 0) {
+    if (resultado.rows.length === 0) {
       return res.status(404).json({ error: 'Configuración no encontrada' });
     }
 
-    res.json({ configuracion: rows[0] });
+    res.json({ configuracion: resultado.rows[0] });
   } catch (error) {
     console.error('Error al obtener configuración:', error);
     res.status(500).json({ error: 'Error al obtener configuración' });
@@ -24,8 +24,8 @@ exports.obtenerConfiguracion = async (req, res) => {
 // Obtener todas las configuraciones
 exports.obtenerTodasConfiguraciones = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM configuracion');
-    res.json({ configuraciones: rows });
+    const resultado = await pool.query('SELECT * FROM configuracion');
+    res.json({ configuraciones: resultado.rows });
   } catch (error) {
     console.error('Error al obtener configuraciones:', error);
     res.status(500).json({ error: 'Error al obtener configuraciones' });
@@ -43,21 +43,21 @@ exports.actualizarConfiguracion = async (req, res) => {
     }
 
     // Verificar si la configuración existe
-    const [existing] = await pool.query(
-      'SELECT * FROM configuracion WHERE clave = ?',
+    const verificacion = await pool.query(
+      'SELECT * FROM configuracion WHERE clave = $1',
       [clave]
     );
 
-    if (existing.length === 0) {
+    if (verificacion.rows.length === 0) {
       // Crear nueva configuración
       await pool.query(
-        'INSERT INTO configuracion (clave, valor) VALUES (?, ?)',
+        'INSERT INTO configuracion (clave, valor) VALUES ($1, $2) RETURNING id',
         [clave, valor]
       );
     } else {
       // Actualizar configuración existente
       await pool.query(
-        'UPDATE configuracion SET valor = ? WHERE clave = ?',
+        'UPDATE configuracion SET valor = $1 WHERE clave = $2',
         [valor, clave]
       );
     }

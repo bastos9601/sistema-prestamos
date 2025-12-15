@@ -17,6 +17,7 @@ import api from '../config/api';
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [nombreSistema, setNombreSistema] = useState('Sistema de Préstamos');
   const [logoSistema, setLogoSistema] = useState('');
@@ -120,8 +121,14 @@ const LoginScreen = () => {
               value={password}
               onChangeText={setPassword}
               mode="outlined"
-              secureTextEntry
+              secureTextEntry={!mostrarPassword}
               style={styles.input}
+              right={
+                <TextInput.Icon
+                  icon={mostrarPassword ? 'eye-off' : 'eye'}
+                  onPress={() => setMostrarPassword(!mostrarPassword)}
+                />
+              }
             />
 
             <Button

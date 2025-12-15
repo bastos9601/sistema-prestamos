@@ -9,6 +9,9 @@ const { manejarErroresValidacion } = require('../middlewares/validacion');
 // Todas las rutas requieren autenticación
 router.use(verificarToken);
 
+// GET /api/clientes/estadisticas - Obtener estadísticas del cobrador (debe ir antes de /:id)
+router.get('/estadisticas', clientesController.obtenerEstadisticasCobrador);
+
 // GET /api/clientes - Obtener todos los clientes
 router.get('/', clientesController.obtenerClientes);
 

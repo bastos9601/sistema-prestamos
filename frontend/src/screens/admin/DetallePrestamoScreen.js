@@ -16,6 +16,7 @@ import {
   DataTable,
   ActivityIndicator,
   Chip,
+  Button,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import api from '../../config/api';
@@ -125,26 +126,38 @@ const DetallePrestamoScreen = ({ route, navigation }) => {
               )}
             </View>
           </View>
-          {prestamo.firma_cliente && (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('VerPagare', { id: prestamo.id })}
-              activeOpacity={0.7}
-            >
-              <View style={{ marginTop: 16, padding: 16, backgroundColor: '#e3f2fd', borderRadius: 12, borderWidth: 2, borderColor: '#1976d2' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1 }}>
-                    <Paragraph style={{ fontSize: 14, color: '#1976d2', fontWeight: '600', marginBottom: 4 }}>
-                      ✅ Pagaré Firmado Digitalmente
-                    </Paragraph>
-                    <Paragraph style={{ fontSize: 12, color: '#6c757d' }}>
-                      Toca para ver el pagaré completo
-                    </Paragraph>
-                  </View>
-                  <Icon name="chevron-right" size={24} color="#1976d2" />
+          <TouchableOpacity
+            onPress={() => navigation.navigate('VerPagare', { id: prestamo.id })}
+            activeOpacity={0.7}
+            style={{ marginTop: 16 }}
+          >
+            <View style={{ 
+              padding: 16, 
+              backgroundColor: prestamo.firma_cliente ? '#e3f2fd' : '#fff3e0', 
+              borderRadius: 12, 
+              borderWidth: 2, 
+              borderColor: prestamo.firma_cliente ? '#1976d2' : '#f57c00' 
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1 }}>
+                  <Paragraph style={{ 
+                    fontSize: 14, 
+                    color: prestamo.firma_cliente ? '#1976d2' : '#f57c00', 
+                    fontWeight: '600', 
+                    marginBottom: 4 
+                  }}>
+                    {prestamo.firma_cliente ? '✅ Pagaré Firmado Digitalmente' : '📄 Ver Pagaré'}
+                  </Paragraph>
+                  <Paragraph style={{ fontSize: 12, color: '#6c757d' }}>
+                    {prestamo.firma_cliente 
+                      ? 'Toca para ver el pagaré completo' 
+                      : 'Toca para ver y compartir el pagaré'}
+                  </Paragraph>
                 </View>
+                <Icon name="chevron-right" size={24} color={prestamo.firma_cliente ? '#1976d2' : '#f57c00'} />
               </View>
-            </TouchableOpacity>
-          )}
+            </View>
+          </TouchableOpacity>
         </Card.Content>
       </Card>
 
@@ -245,6 +258,34 @@ const DetallePrestamoScreen = ({ route, navigation }) => {
           </DataTable>
         </Card.Content>
       </Card>
+
+      {/* <Card style={[styles.card, { marginBottom: 20 }]}>
+        <Card.Content style={{ paddingVertical: 16 }}>
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate('VerPagare', { id: prestamo.id })}
+            icon="file-document"
+            style={{ 
+              paddingVertical: 8, 
+              borderRadius: 8,
+              backgroundColor: prestamo.firma_cliente ? '#1976d2' : '#f57c00'
+            }}
+            labelStyle={{ fontSize: 16, fontWeight: '600' }}
+          >
+            {prestamo.firma_cliente ? '📄 Ver Pagaré Firmado' : '📄 Ver Pagaré'}
+          </Button>
+          {prestamo.firma_cliente && (
+            <Paragraph style={{ 
+              textAlign: 'center', 
+              marginTop: 8, 
+              fontSize: 12, 
+              color: '#6c757d' 
+            }}>
+              ✅ Este préstamo tiene pagaré firmado digitalmente
+            </Paragraph>
+          )}
+        </Card.Content>
+      </Card> */}
     </ScrollView>
   );
 };

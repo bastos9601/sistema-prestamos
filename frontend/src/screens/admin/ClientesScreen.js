@@ -1,5 +1,6 @@
 // Pantalla de gestión de clientes
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   StyleSheet,
@@ -34,9 +35,11 @@ const ClientesScreen = ({ navigation }) => {
   const [fotoModalVisible, setFotoModalVisible] = useState(false);
   const [fotoSeleccionada, setFotoSeleccionada] = useState(null);
 
-  useEffect(() => {
-    cargarClientes();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarClientes();
+    }, [])
+  );
 
   useEffect(() => {
     filtrarClientes();

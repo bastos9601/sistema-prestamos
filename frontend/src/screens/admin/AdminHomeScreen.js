@@ -1,5 +1,6 @@
 // Pantalla de inicio para administradores
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, ScrollView, RefreshControl, Dimensions, TouchableOpacity } from 'react-native';
 import { Card, Title, Paragraph, ActivityIndicator, Text, ProgressBar, IconButton } from 'react-native-paper';
 import { AuthContext } from '../../context/AuthContext';
@@ -14,9 +15,11 @@ const AdminHomeScreen = ({ navigation }) => {
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
 
-  useEffect(() => {
-    cargarReportes();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarReportes();
+    }, [])
+  );
 
   const cargarReportes = async () => {
     try {
@@ -130,6 +133,44 @@ const AdminHomeScreen = ({ navigation }) => {
                   <Text style={styles.statLabel}>Vencidos</Text>
                 </Card.Content>
               </Card>
+            </View>
+
+            <View style={styles.gridRow}>
+              <TouchableOpacity 
+                style={{ flex: 1, marginHorizontal: 4 }}
+                onPress={() => navigation.navigate('Clientes')}
+                activeOpacity={0.7}
+              >
+                <Card style={[styles.statCard, styles.cardWarning]}>
+                  <Card.Content style={styles.statCardContent}>
+                    <View style={styles.iconContainer}>
+                      <Text style={styles.iconText}>👥</Text>
+                    </View>
+                    <Text style={styles.statValue}>
+                      {reportes.clientes?.total_clientes || 0}
+                    </Text>
+                    <Text style={styles.statLabel}>Total Clientes</Text>
+                  </Card.Content>
+                </Card>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={{ flex: 1, marginHorizontal: 4 }}
+                onPress={() => navigation.navigate('Usuarios')}
+                activeOpacity={0.7}
+              >
+                <Card style={[styles.statCard, styles.cardSecondary]}>
+                  <Card.Content style={styles.statCardContent}>
+                    <View style={styles.iconContainer}>
+                      <Text style={styles.iconText}>👤</Text>
+                    </View>
+                    <Text style={styles.statValue}>
+                      {reportes.usuarios?.total_usuarios || 0}
+                    </Text>
+                    <Text style={styles.statLabel}>Total Usuarios</Text>
+                  </Card.Content>
+                </Card>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -357,6 +398,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderLeftWidth: 4,
     borderLeftColor: '#F44336',
+  },
+  cardWarning: {
+    backgroundColor: '#ffffff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
+  },
+  cardSecondary: {
+    backgroundColor: '#ffffff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#9C27B0',
   },
   iconContainer: {
     marginBottom: 8,

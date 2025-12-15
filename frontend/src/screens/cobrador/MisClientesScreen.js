@@ -1,5 +1,6 @@
 // Pantalla de clientes asignados al cobrador
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   StyleSheet,
@@ -31,9 +32,11 @@ const MisClientesScreen = ({ navigation }) => {
   const [refrescando, setRefrescando] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
 
-  useEffect(() => {
-    cargarClientes();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarClientes();
+    }, [])
+  );
 
   useEffect(() => {
     filtrarClientes();

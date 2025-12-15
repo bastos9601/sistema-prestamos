@@ -8,13 +8,13 @@ const registrarUsuario = async (req, res) => {
   try {
     const { nombre, email, password, rol } = req.body;
 
-    // Verificar si el email ya existe
-    const [usuarios] = await pool.query(
-      'SELECT id FROM usuarios WHERE email = ?',
+    // Verificar si el email ya existe (PostgreSQL usa $1, $2 en lugar de ?)
+    const verificacion = await pool.query(
+      'SELECT id FROM usuarios WHERE email = $1',
       [email]
     );
 
-    if (usuarios.length > 0) {
+    if (verificacion.rows.length > 0) {
       return res.status(400).json({ 
         error: 'El email ya está registrado' 
       });
@@ -23,16 +23,16 @@ const registrarUsuario = async (req, res) => {
     // Encriptar contraseña
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Insertar usuario
-    const [resultado] = await pool.query(
-      'INSERT INTO usuarios (nombre, email, password, rol, foto_url) VALUES (?, ?, ?, ?, ?)',
+    // Insertar usuario (PostgreSQL usa RETURNING para obtener el ID)
+    const resultado = await pool.query(
+      'INSERT INTO usuarios (nombre, email, password, rol, foto_url) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [nombre, email, passwordHash, rol || 'cobrador', req.body.foto_url || null]
     );
 
     res.status(201).json({
       mensaje: 'Usuario creado exitosamente',
       usuario: {
-        id: resultado.insertId,
+        id: resultado.rows[0].id,
         nombre,
         email,
         rol: rol || 'cobrador'
@@ -49,19 +49,19 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Buscar usuario por email
-    const [usuarios] = await pool.query(
-      'SELECT * FROM usuarios WHERE email = ? AND activo = TRUE',
+    // Buscar usuario por email (PostgreSQL usa $1, $2 en lugar de ?)
+    const resultado = await pool.query(
+      'SELECT * FROM usuarios WHERE email = $1 AND activo = TRUE',
       [email]
     );
 
-    if (usuarios.length === 0) {
+    if (resultado.rows.length === 0) {
       return res.status(401).json({ 
         error: 'Credenciales inválidas' 
       });
     }
 
-    const usuario = usuarios[0];
+    const usuario = resultado.rows[0];
 
     // Verificar contraseña
     const passwordValido = await bcrypt.compare(password, usuario.password);
@@ -102,16 +102,16 @@ const login = async (req, res) => {
 // Obtener perfil del usuario autenticado
 const obtenerPerfil = async (req, res) => {
   try {
-    const [usuarios] = await pool.query(
-      'SELECT id, nombre, email, rol, creado_en FROM usuarios WHERE id = ?',
+    const resultado = await pool.query(
+      'SELECT id, nombre, email, rol, creado_en FROM usuarios WHERE id = $1',
       [req.usuario.id]
     );
 
-    if (usuarios.length === 0) {
+    if (resultado.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    res.json({ usuario: usuarios[0] });
+    res.json({ usuario: resultado.rows[0] });
   } catch (error) {
     console.error('Error al obtener perfil:', error);
     res.status(500).json({ error: 'Error al obtener perfil' });

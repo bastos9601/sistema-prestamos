@@ -1,5 +1,6 @@
 // Pantalla de inicio para cobradores
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { Card, Title, Paragraph, ActivityIndicator, Text } from 'react-native-paper';
 import { AuthContext } from '../../context/AuthContext';
@@ -12,18 +13,23 @@ const CobradorHomeScreen = ({ navigation }) => {
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
 
-  useEffect(() => {
-    cargarEstadisticas();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarEstadisticas();
+    }, [])
+  );
 
   const cargarEstadisticas = async () => {
     try {
+      // Obtener estadísticas del cobrador (total de clientes creados)
+      const estadisticasRes = await api.get('/clientes/estadisticas');
+      const totalClientesCreados = estadisticasRes.data.total_clientes;
+
       // Obtener clientes con cuotas pendientes
       const clientesRes = await api.get('/pagos/clientes-pendientes');
       const clientes = clientesRes.data.clientes;
 
       // Calcular estadísticas
-      const totalClientes = clientes.length;
       const totalCuotasPendientes = clientes.reduce(
         (sum, c) => sum + parseInt(c.cuotas_pendientes),
         0
@@ -34,7 +40,7 @@ const CobradorHomeScreen = ({ navigation }) => {
       );
 
       setEstadisticas({
-        totalClientes,
+        totalClientes: totalClientesCreados,
         totalCuotasPendientes,
         totalMontoPendiente,
       });

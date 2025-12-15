@@ -1,5 +1,6 @@
 // Pantalla de gestión de préstamos
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   StyleSheet,
@@ -25,9 +26,11 @@ const PrestamosScreen = ({ navigation }) => {
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
 
-  useEffect(() => {
-    cargarPrestamos();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarPrestamos();
+    }, [])
+  );
 
   const cargarPrestamos = async () => {
     try {

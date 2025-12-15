@@ -5,11 +5,11 @@ const { pool } = require('../config/database');
 // Obtener todos los usuarios
 const obtenerUsuarios = async (req, res) => {
   try {
-    const [usuarios] = await pool.query(
+    const resultado = await pool.query(
       'SELECT id, nombre, email, rol, activo, foto_url, creado_en FROM usuarios ORDER BY creado_en DESC'
     );
 
-    res.json({ usuarios });
+    res.json({ usuarios: resultado.rows });
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
     res.status(500).json({ error: 'Error al obtener usuarios' });
@@ -21,16 +21,16 @@ const obtenerUsuarioPorId = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [usuarios] = await pool.query(
-      'SELECT id, nombre, email, rol, activo, foto_url, creado_en FROM usuarios WHERE id = ?',
+    const resultado = await pool.query(
+      'SELECT id, nombre, email, rol, activo, foto_url, creado_en FROM usuarios WHERE id = $1',
       [id]
     );
 
-    if (usuarios.length === 0) {
+    if (resultado.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    res.json({ usuario: usuarios[0] });
+    res.json({ usuario: resultado.rows[0] });
   } catch (error) {
     console.error('Error al obtener usuario:', error);
     res.status(500).json({ error: 'Error al obtener usuario' });
@@ -44,12 +44,12 @@ const actualizarUsuario = async (req, res) => {
     const { nombre, email, rol, activo, password } = req.body;
 
     // Verificar si el usuario existe
-    const [usuarioExiste] = await pool.query(
-      'SELECT id FROM usuarios WHERE id = ?',
+    const usuarioExiste = await pool.query(
+      'SELECT id FROM usuarios WHERE id = $1',
       [id]
     );
 
-    if (usuarioExiste.length === 0) {
+    if (usuarioExiste.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
@@ -58,29 +58,30 @@ const actualizarUsuario = async (req, res) => {
     const valores = [];
     const campos = [];
 
+    let paramCounter = 1;
     if (nombre) {
-      campos.push('nombre = ?');
+      campos.push(`nombre = $${paramCounter++}`);
       valores.push(nombre);
     }
     if (email) {
-      campos.push('email = ?');
+      campos.push(`email = $${paramCounter++}`);
       valores.push(email);
     }
     if (rol) {
-      campos.push('rol = ?');
+      campos.push(`rol = $${paramCounter++}`);
       valores.push(rol);
     }
     if (activo !== undefined) {
-      campos.push('activo = ?');
+      campos.push(`activo = $${paramCounter++}`);
       valores.push(activo);
     }
     if (password) {
       const passwordHash = await bcrypt.hash(password, 10);
-      campos.push('password = ?');
+      campos.push(`password = $${paramCounter++}`);
       valores.push(passwordHash);
     }
     if (req.body.foto_url !== undefined) {
-      campos.push('foto_url = ?');
+      campos.push(`foto_url = $${paramCounter++}`);
       valores.push(req.body.foto_url);
     }
 
@@ -88,7 +89,7 @@ const actualizarUsuario = async (req, res) => {
       return res.status(400).json({ error: 'No hay campos para actualizar' });
     }
 
-    query += campos.join(', ') + ' WHERE id = ?';
+    query += campos.join(', ') + ` WHERE id = $${paramCounter}`;
     valores.push(id);
 
     await pool.query(query, valores);
@@ -112,12 +113,12 @@ const eliminarUsuario = async (req, res) => {
       });
     }
 
-    const [resultado] = await pool.query(
-      'DELETE FROM usuarios WHERE id = ?',
+    const resultado = await pool.query(
+      'DELETE FROM usuarios WHERE id = $1',
       [id]
     );
 
-    if (resultado.affectedRows === 0) {
+    if (resultado.rowCount === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
@@ -131,12 +132,12 @@ const eliminarUsuario = async (req, res) => {
 // Obtener cobradores activos
 const obtenerCobradores = async (req, res) => {
   try {
-    const [cobradores] = await pool.query(
-      'SELECT id, nombre, email, foto_url FROM usuarios WHERE rol = ? AND activo = TRUE',
+    const resultado = await pool.query(
+      'SELECT id, nombre, email, foto_url FROM usuarios WHERE rol = $1 AND activo = TRUE',
       ['cobrador']
     );
 
-    res.json({ cobradores });
+    res.json({ cobradores: resultado.rows });
   } catch (error) {
     console.error('Error al obtener cobradores:', error);
     res.status(500).json({ error: 'Error al obtener cobradores' });

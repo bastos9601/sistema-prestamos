@@ -3,10 +3,10 @@ const { pool } = require('../config/database');
 
 // Registrar un pago
 const registrarPago = async (req, res) => {
-  const connection = await pool.getConnection();
+  // Transacciones PostgreSQL se manejan diferente
   
   try {
-    await connection.beginTransaction();
+    await pool.query("BEGIN");
 
     const {
       cuota_id,
@@ -18,22 +18,25 @@ const registrarPago = async (req, res) => {
       notas
     } = req.body;
 
-    // Verificar que la cuota existe y obtener información
-    const [cuotas] = await connection.query(
-      'SELECT * FROM cuotas WHERE id = ? AND prestamo_id = ?',
+    // Verificar que la cuota existe y obtener información del préstamo
+    const cuotas = await pool.query(
+      `SELECT c.*, p.cliente_id 
+       FROM cuotas c
+       INNER JOIN prestamos p ON c.prestamo_id = p.id
+       WHERE c.id = $1 AND c.prestamo_id = $2`,
       [cuota_id, prestamo_id]
     );
 
-    if (cuotas.length === 0) {
-      await connection.rollback();
+    if (cuotas.rows.length === 0) {
+      await pool.query("ROLLBACK");
       return res.status(404).json({ error: 'Cuota no encontrada' });
     }
 
-    const cuota = cuotas[0];
-    const montoPendiente = cuota.monto_cuota - cuota.monto_pagado;
+    const cuota = cuotas.rows[0];
+    const montoPendiente = cuota.monto - cuota.monto_pagado;
 
     if (monto > montoPendiente) {
-      await connection.rollback();
+      await pool.query("ROLLBACK");
       return res.status(400).json({ 
         error: 'El monto excede el saldo pendiente de la cuota',
         monto_pendiente: montoPendiente
@@ -41,13 +44,14 @@ const registrarPago = async (req, res) => {
     }
 
     // Registrar el pago
-    const [resultadoPago] = await connection.query(
+    const resultadoPago = await pool.query(
       `INSERT INTO pagos 
-       (cuota_id, prestamo_id, cobrador_id, monto, fecha_pago, tipo_pago, referencia, notas)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (cuota_id, prestamo_id, cliente_id, cobrador_id, monto, fecha_pago, metodo_pago, referencia, observaciones)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
       [
         cuota_id,
         prestamo_id,
+        cuota.cliente_id,
         req.usuario.id,
         monto,
         fecha_pago,
@@ -59,47 +63,57 @@ const registrarPago = async (req, res) => {
 
     // Actualizar monto pagado de la cuota
     const nuevoMontoPagado = parseFloat(cuota.monto_pagado) + parseFloat(monto);
-    let nuevoEstado = 'parcial';
+    const montoCuota = parseFloat(cuota.monto);
+    let nuevoEstado = 'pendiente';
 
-    if (nuevoMontoPagado >= cuota.monto_cuota) {
+    // Comparar con un pequeño margen de error para evitar problemas de precisión decimal
+    if (nuevoMontoPagado >= montoCuota - 0.01) {
       nuevoEstado = 'pagada';
     }
 
-    await connection.query(
-      'UPDATE cuotas SET monto_pagado = ?, estado = ? WHERE id = ?',
+    console.log(`Actualizando cuota ${cuota_id}: monto_pagado=${nuevoMontoPagado}, estado=${nuevoEstado}`);
+
+    await pool.query(
+      'UPDATE cuotas SET monto_pagado = $1, estado = $2 WHERE id = $3',
       [nuevoMontoPagado, nuevoEstado, cuota_id]
     );
 
     // Verificar si todas las cuotas están pagadas para actualizar estado del préstamo
-    const [cuotasPendientes] = await connection.query(
-      'SELECT COUNT(*) as pendientes FROM cuotas WHERE prestamo_id = ? AND estado != ?',
-      [prestamo_id, 'pagada']
+    const cuotasPendientes = await pool.query(
+      `SELECT COUNT(*) as pendientes 
+       FROM cuotas 
+       WHERE prestamo_id = $1 AND estado != 'pagada'`,
+      [prestamo_id]
     );
 
-    if (cuotasPendientes[0].pendientes === 0) {
-      await connection.query(
-        'UPDATE prestamos SET estado = ? WHERE id = ?',
-        ['pagado', prestamo_id]
+    const totalPendientes = parseInt(cuotasPendientes.rows[0].pendientes);
+    console.log(`Préstamo ${prestamo_id}: cuotas pendientes = ${totalPendientes}`);
+
+    if (totalPendientes === 0) {
+      console.log(`Actualizando préstamo ${prestamo_id} a estado "completado"`);
+      await pool.query(
+        'UPDATE prestamos SET estado = $1 WHERE id = $2',
+        ['completado', prestamo_id]
       );
     }
 
-    await connection.commit();
+    await pool.query("COMMIT");
 
     res.status(201).json({
       mensaje: 'Pago registrado exitosamente',
       pago: {
-        id: resultadoPago.insertId,
+        id: resultadoPago.rows[0].id,
         monto,
         fecha_pago,
-        saldo_restante: cuota.monto_cuota - nuevoMontoPagado
+        saldo_restante: cuota.monto - nuevoMontoPagado
       }
     });
   } catch (error) {
-    await connection.rollback();
+    await pool.query("ROLLBACK");
     console.error('Error al registrar pago:', error);
     res.status(500).json({ error: 'Error al registrar pago' });
   } finally {
-    connection.release();
+    // No necesario en PostgreSQL con pool.query
   }
 };
 
@@ -108,19 +122,19 @@ const obtenerPagosPorPrestamo = async (req, res) => {
   try {
     const { prestamo_id } = req.params;
 
-    const [pagos] = await pool.query(
+    const resultado = await pool.query(
       `SELECT p.*, 
               c.numero_cuota,
               u.nombre as cobrador_nombre
        FROM pagos p
        INNER JOIN cuotas c ON p.cuota_id = c.id
        LEFT JOIN usuarios u ON p.cobrador_id = u.id
-       WHERE p.prestamo_id = ?
+       WHERE p.prestamo_id = $1
        ORDER BY p.fecha_pago DESC`,
       [prestamo_id]
     );
 
-    res.json({ pagos });
+    res.json({ pagos: resultado.rows });
   } catch (error) {
     console.error('Error al obtener pagos:', error);
     res.status(500).json({ error: 'Error al obtener pagos' });
@@ -134,6 +148,7 @@ const obtenerCuotasPendientes = async (req, res) => {
 
     let query = `
       SELECT c.*, 
+             c.monto as monto_cuota,
              p.monto_prestado,
              p.cliente_id,
              cl.nombre as cliente_nombre,
@@ -143,24 +158,24 @@ const obtenerCuotasPendientes = async (req, res) => {
       FROM cuotas c
       INNER JOIN prestamos p ON c.prestamo_id = p.id
       INNER JOIN clientes cl ON p.cliente_id = cl.id
-      WHERE c.estado IN ('pendiente', 'vencida', 'parcial')
+      WHERE c.estado IN ('pendiente', 'vencida')
         AND p.estado = 'activo'
-        AND cl.id = ?
+        AND cl.id = $1
     `;
 
     const params = [cliente_id];
 
     // Si es cobrador, solo ver sus cuotas asignadas
     if (req.usuario.rol === 'cobrador') {
-      query += ' AND p.cobrador_id = ?';
+      query += ' AND p.cobrador_id = $2';
       params.push(req.usuario.id);
     }
 
     query += ' ORDER BY c.fecha_vencimiento ASC';
 
-    const [cuotas] = await pool.query(query, params);
+    const resultado = await pool.query(query, params);
 
-    res.json({ cuotas });
+    res.json({ cuotas: resultado.rows });
   } catch (error) {
     console.error('Error al obtener cuotas pendientes:', error);
     res.status(500).json({ error: 'Error al obtener cuotas pendientes' });
@@ -174,11 +189,11 @@ const obtenerClientesConCuotasPendientes = async (req, res) => {
       SELECT DISTINCT cl.id, cl.nombre, cl.apellido, cl.cedula, cl.telefono, cl.direccion,
              COUNT(DISTINCT p.id) as total_prestamos,
              COUNT(c.id) as cuotas_pendientes,
-             SUM(c.monto_cuota - c.monto_pagado) as monto_pendiente
+             SUM(c.monto - c.monto_pagado) as monto_pendiente
       FROM clientes cl
       INNER JOIN prestamos p ON cl.id = p.cliente_id
       INNER JOIN cuotas c ON p.id = c.prestamo_id
-      WHERE c.estado IN ('pendiente', 'vencida', 'parcial')
+      WHERE c.estado IN ('pendiente', 'vencida')
         AND p.estado = 'activo'
     `;
 
@@ -186,15 +201,15 @@ const obtenerClientesConCuotasPendientes = async (req, res) => {
 
     // Si es cobrador, solo ver sus clientes asignados
     if (req.usuario.rol === 'cobrador') {
-      query += ' AND p.cobrador_id = ?';
+      query += ' AND p.cobrador_id = $1';
       params.push(req.usuario.id);
     }
 
     query += ' GROUP BY cl.id ORDER BY cl.nombre, cl.apellido';
 
-    const [clientes] = await pool.query(query, params);
+    const resultado = await pool.query(query, params);
 
-    res.json({ clientes });
+    res.json({ clientes: resultado.rows });
   } catch (error) {
     console.error('Error al obtener clientes:', error);
     res.status(500).json({ error: 'Error al obtener clientes' });

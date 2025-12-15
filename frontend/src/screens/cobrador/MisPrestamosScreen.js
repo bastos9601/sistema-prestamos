@@ -1,5 +1,5 @@
 // Pantalla de préstamos del cobrador
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -19,6 +19,7 @@ import {
   Button,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../../config/api';
 import { formatearMoneda } from '../../utils/formatearMoneda';
 
@@ -29,9 +30,11 @@ const MisPrestamosScreen = ({ navigation }) => {
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
 
-  useEffect(() => {
-    cargarPrestamos();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarPrestamos();
+    }, [])
+  );
 
   useEffect(() => {
     filtrarPrestamos();
@@ -163,11 +166,15 @@ const MisPrestamosScreen = ({ navigation }) => {
         <Button
           mode="contained"
           onPress={() => navigation.navigate('DetalleCuotas', { clienteId: item.cliente_id })}
-          icon="cash-multiple"
-          style={styles.botonPago}
+          icon={item.estado === 'completado' ? 'check-circle' : 'cash-multiple'}
+          style={[
+            styles.botonPago,
+            item.estado === 'completado' && styles.botonPagado
+          ]}
           labelStyle={{ fontSize: 13, fontWeight: '600' }}
+          disabled={item.estado === 'completado'}
         >
-          Registrar Pago
+          {item.estado === 'completado' ? 'Pagado' : 'Registrar Pago'}
         </Button>
         <Button
           mode="outlined"
@@ -306,6 +313,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#2e7d32',
     borderRadius: 8,
+  },
+  botonPagado: {
+    backgroundColor: '#9e9e9e',
+    opacity: 0.6,
   },
   botonDetalle: {
     flex: 1,

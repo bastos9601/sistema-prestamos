@@ -86,6 +86,32 @@ const PrestamosStack = () => (
   </Stack.Navigator>
 );
 
+// Stack de Prestar (crear préstamos)
+const PrestarStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen
+      name="ListaClientes"
+      component={MisClientesScreen}
+      options={{ title: 'Seleccionar Cliente' }}
+    />
+    <Stack.Screen
+      name="CrearPrestamo"
+      component={CrearPrestamoScreen}
+      options={{ title: 'Crear Préstamo' }}
+    />
+    <Stack.Screen
+      name="Pagare"
+      component={PagareScreen}
+      options={{ title: 'Pagaré' }}
+    />
+    <Stack.Screen
+      name="VerPagare"
+      component={VerPagareScreen}
+      options={{ title: 'Ver Pagaré Firmado' }}
+    />
+  </Stack.Navigator>
+);
+
 const CobradorNavigator = () => {
   const { logout } = useContext(AuthContext);
 
@@ -99,6 +125,8 @@ const CobradorNavigator = () => {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Clientes') {
             iconName = focused ? 'account-multiple' : 'account-multiple-outline';
+          } else if (route.name === 'Prestar') {
+            iconName = focused ? 'hand-coin' : 'hand-coin-outline';
           } else if (route.name === 'Préstamos') {
             iconName = focused ? 'cash-multiple' : 'cash-multiple';
           }
@@ -158,6 +186,7 @@ const CobradorNavigator = () => {
         }}
       />
       <Tab.Screen name="Clientes" component={ClientesStack} />
+      <Tab.Screen name="Prestar" component={PrestarStack} />
       <Tab.Screen name="Préstamos" component={PrestamosStack} />
     </Tab.Navigator>
   );

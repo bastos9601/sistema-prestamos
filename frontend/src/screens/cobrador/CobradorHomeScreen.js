@@ -21,9 +21,11 @@ const CobradorHomeScreen = ({ navigation }) => {
 
   const cargarEstadisticas = async () => {
     try {
-      // Obtener estadísticas del cobrador (total de clientes creados)
+      // Obtener estadísticas del cobrador (incluye datos financieros)
       const estadisticasRes = await api.get('/clientes/estadisticas');
       const totalClientesCreados = estadisticasRes.data.total_clientes;
+      const totalPrestado = estadisticasRes.data.total_prestado;
+      const gananciaEstimada = estadisticasRes.data.ganancia_estimada;
 
       // Obtener clientes con cuotas pendientes
       const clientesRes = await api.get('/pagos/clientes-pendientes');
@@ -43,6 +45,8 @@ const CobradorHomeScreen = ({ navigation }) => {
         totalClientes: totalClientesCreados,
         totalCuotasPendientes,
         totalMontoPendiente,
+        totalPrestado,
+        gananciaEstimada,
       });
     } catch (error) {
       console.error('Error al cargar estadísticas:', error);
@@ -118,6 +122,37 @@ const CobradorHomeScreen = ({ navigation }) => {
                   <Text style={styles.montoLabel}>Total por Cobrar</Text>
                   <Text style={styles.montoValor}>
                     {formatearMoneda(estadisticas.totalMontoPendiente)}
+                  </Text>
+                </View>
+              </View>
+            </Card.Content>
+          </Card>
+
+          {/* Tarjeta de estadísticas financieras */}
+          <Card style={styles.financieraCard}>
+            <Card.Content>
+              <Title style={styles.financieraTitulo}>📊 Mi Cartera</Title>
+              
+              <View style={styles.financieraItem}>
+                <View style={styles.financieraIconContainer}>
+                  <Text style={styles.financieraIcon}>💸</Text>
+                </View>
+                <View style={styles.financieraInfo}>
+                  <Text style={styles.financieraLabel}>Total Prestado</Text>
+                  <Text style={styles.financieraValor}>
+                    {formatearMoneda(estadisticas.totalPrestado || 0)}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.financieraItem, styles.financieraItemDestacado]}>
+                <View style={styles.financieraIconContainer}>
+                  <Text style={styles.financieraIcon}>💵</Text>
+                </View>
+                <View style={styles.financieraInfo}>
+                  <Text style={styles.financieraLabel}>Ganancia Estimada</Text>
+                  <Text style={[styles.financieraValor, styles.financieraGanancia]}>
+                    {formatearMoneda(estadisticas.gananciaEstimada || 0)}
                   </Text>
                 </View>
               </View>
@@ -327,6 +362,68 @@ const styles = StyleSheet.create({
   montoValor: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: '#2e7d32',
+  },
+  financieraCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    elevation: 4,
+    backgroundColor: '#ffffff',
+    shadowColor: '#6200ee',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e3f2fd',
+  },
+  financieraTitulo: {
+    fontSize: 18,
+    color: '#6200ee',
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  financieraItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  financieraItemDestacado: {
+    backgroundColor: '#e8f5e9',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  },
+  financieraIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    elevation: 2,
+  },
+  financieraIcon: {
+    fontSize: 24,
+  },
+  financieraInfo: {
+    flex: 1,
+  },
+  financieraLabel: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  financieraValor: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#212529',
+  },
+  financieraGanancia: {
     color: '#2e7d32',
   },
   accionesCard: {

@@ -178,8 +178,21 @@ const eliminarCliente = async (req, res) => {
       return res.status(403).json({ error: 'No tiene permisos para eliminar este cliente' });
     }
 
+    // Verificar si el cliente tiene préstamos activos
+    const prestamosActivos = await pool.query(
+      'SELECT COUNT(*) as total FROM prestamos WHERE cliente_id = $1 AND estado = $2',
+      [id, 'activo']
+    );
+
+    if (parseInt(prestamosActivos.rows[0].total) > 0) {
+      return res.status(400).json({ 
+        error: 'No se puede eliminar el cliente porque tiene préstamos activos. Primero debe completar o cancelar los préstamos.' 
+      });
+    }
+
+    // Eliminar físicamente el cliente (CASCADE eliminará préstamos completados, cuotas y pagos)
     const resultado = await pool.query(
-      'UPDATE clientes SET activo = FALSE WHERE id = $1',
+      'DELETE FROM clientes WHERE id = $1',
       [id]
     );
 
@@ -187,7 +200,7 @@ const eliminarCliente = async (req, res) => {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
-    res.json({ mensaje: 'Cliente desactivado exitosamente' });
+    res.json({ mensaje: 'Cliente eliminado exitosamente' });
   } catch (error) {
     console.error('Error al eliminar cliente:', error);
     res.status(500).json({ error: 'Error al eliminar cliente' });
@@ -209,9 +222,23 @@ const obtenerEstadisticasCobrador = async (req, res) => {
       [req.usuario.id]
     );
 
+    // Estadísticas financieras del cobrador (solo préstamos que él creó)
+    const estadisticasFinancieras = await pool.query(
+      `SELECT 
+        SUM(monto_prestado) as total_prestado,
+        SUM(monto_total) as total_con_interes,
+        SUM(monto_total - monto_prestado) as ganancia_estimada
+       FROM prestamos 
+       WHERE creado_por = $1 AND estado IN ('activo', 'completado')`,
+      [req.usuario.id]
+    );
+
     res.json({
       total_clientes: parseInt(totalClientes.rows[0].total),
-      total_prestamos: parseInt(totalPrestamos.rows[0].total)
+      total_prestamos: parseInt(totalPrestamos.rows[0].total),
+      total_prestado: parseFloat(estadisticasFinancieras.rows[0].total_prestado) || 0,
+      total_con_interes: parseFloat(estadisticasFinancieras.rows[0].total_con_interes) || 0,
+      ganancia_estimada: parseFloat(estadisticasFinancieras.rows[0].ganancia_estimada) || 0
     });
   } catch (error) {
     console.error('Error al obtener estadísticas:', error);

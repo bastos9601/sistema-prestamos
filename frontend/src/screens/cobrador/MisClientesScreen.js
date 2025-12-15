@@ -24,10 +24,13 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import api from '../../config/api';
 
-const MisClientesScreen = ({ navigation }) => {
+const MisClientesScreen = ({ navigation, route }) => {
   const [clientes, setClientes] = useState([]);
   const [clientesFiltrados, setClientesFiltrados] = useState([]);
   const [busqueda, setBusqueda] = useState('');
+  
+  // Detectar si viene desde la pestaña "Prestar"
+  const modoPrestar = route?.name === 'ListaClientes';
   const [cargando, setCargando] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
@@ -101,71 +104,118 @@ const MisClientesScreen = ({ navigation }) => {
     );
   };
 
-  const renderCliente = ({ item }) => (
-    <Card style={styles.card}>
-      <Card.Content style={{ paddingVertical: 16 }}>
-        <View style={styles.cardHeader}>
-          <TouchableOpacity
-            style={styles.avatarContainer}
-            activeOpacity={0.7}
-          >
-            {item.foto_url ? (
-              <Image
-                source={{ uri: item.foto_url }}
-                style={styles.avatar}
-              />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Icon name="account" size={40} color="#6200ee" />
+  const renderCliente = ({ item }) => {
+    // Si está en modo "Prestar", toda la tarjeta es clickeable para crear préstamo
+    if (modoPrestar) {
+      return (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('CrearPrestamo', { clienteId: item.id })}
+          activeOpacity={0.7}
+        >
+          <Card style={styles.card}>
+            <Card.Content style={{ paddingVertical: 16 }}>
+              <View style={styles.cardHeader}>
+                <View style={styles.avatarContainer}>
+                  {item.foto_url ? (
+                    <Image
+                      source={{ uri: item.foto_url }}
+                      style={styles.avatar}
+                    />
+                  ) : (
+                    <View style={styles.avatarPlaceholder}>
+                      <Icon name="account" size={40} color="#6200ee" />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.cardInfo}>
+                  <Title style={{ fontSize: 18, fontWeight: '600', color: '#212529' }}>
+                    {item.nombre} {item.apellido}
+                  </Title>
+                  <View style={{ marginTop: 8, gap: 4 }}>
+                    <Paragraph style={{ fontSize: 14, color: '#6c757d' }}>
+                      📋 DNI: {item.cedula}
+                    </Paragraph>
+                    {item.telefono && (
+                      <Paragraph style={{ fontSize: 14, color: '#6c757d' }}>
+                        📞 Tel: {item.telefono}
+                      </Paragraph>
+                    )}
+                    {item.direccion && (
+                      <Paragraph numberOfLines={2} style={{ fontSize: 14, color: '#6c757d' }}>
+                        📍 {item.direccion}
+                      </Paragraph>
+                    )}
+                  </View>
+                </View>
+                <Icon name="chevron-right" size={32} color="#6200ee" />
               </View>
-            )}
-          </TouchableOpacity>
-          <View style={styles.cardInfo}>
-            <Title style={{ fontSize: 18, fontWeight: '600', color: '#212529' }}>
-              {item.nombre} {item.apellido}
-            </Title>
-            <View style={{ marginTop: 8, gap: 4 }}>
-              <Paragraph style={{ fontSize: 14, color: '#6c757d' }}>
-                📋 DNI: {item.cedula}
-              </Paragraph>
-              {item.telefono && (
+            </Card.Content>
+          </Card>
+        </TouchableOpacity>
+      );
+    }
+
+    // Modo normal: mostrar botones de editar/eliminar
+    return (
+      <Card style={styles.card}>
+        <Card.Content style={{ paddingVertical: 16 }}>
+          <View style={styles.cardHeader}>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              activeOpacity={0.7}
+            >
+              {item.foto_url ? (
+                <Image
+                  source={{ uri: item.foto_url }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Icon name="account" size={40} color="#6200ee" />
+                </View>
+              )}
+            </TouchableOpacity>
+            <View style={styles.cardInfo}>
+              <Title style={{ fontSize: 18, fontWeight: '600', color: '#212529' }}>
+                {item.nombre} {item.apellido}
+              </Title>
+              <View style={{ marginTop: 8, gap: 4 }}>
                 <Paragraph style={{ fontSize: 14, color: '#6c757d' }}>
-                  📞 Tel: {item.telefono}
+                  📋 DNI: {item.cedula}
                 </Paragraph>
-              )}
-              {item.direccion && (
-                <Paragraph numberOfLines={2} style={{ fontSize: 14, color: '#6c757d' }}>
-                  📍 {item.direccion}
-                </Paragraph>
-              )}
+                {item.telefono && (
+                  <Paragraph style={{ fontSize: 14, color: '#6c757d' }}>
+                    📞 Tel: {item.telefono}
+                  </Paragraph>
+                )}
+                {item.direccion && (
+                  <Paragraph numberOfLines={2} style={{ fontSize: 14, color: '#6c757d' }}>
+                    📍 {item.direccion}
+                  </Paragraph>
+                )}
+              </View>
+            </View>
+            <View style={styles.botonesAccion}>
+              <IconButton
+                icon="pencil"
+                iconColor="#1976d2"
+                size={24}
+                onPress={() => navigation.navigate('EditarCliente', { id: item.id })}
+              />
+              <IconButton
+                icon="delete"
+                iconColor="#d32f2f"
+                size={24}
+                onPress={() =>
+                  eliminarCliente(item.id, `${item.nombre} ${item.apellido}`)
+                }
+              />
             </View>
           </View>
-          <View style={styles.botonesAccion}>
-            {/* <IconButton
-              icon="file-document-plus"
-              iconColor="#2e7d32"
-              size={24}
-              onPress={() => navigation.navigate('CrearPrestamo', { clienteId: item.id })}
-            /> */}
-            <IconButton
-              icon="pencil"
-              iconColor="#1976d2"
-              size={24}
-              onPress={() => navigation.navigate('EditarCliente', { id: item.id })}
-            />
-            <IconButton
-              icon="delete"
-              iconColor="#d32f2f"
-              size={24}
-              onPress={() =>
-                eliminarCliente(item.id, `${item.nombre} ${item.apellido}`)
-              }
-            />
-          </View>
-        </View>
-      </Card.Content>
-    </Card>
-  );
+        </Card.Content>
+      </Card>
+    );
+  };
 
   if (cargando) {
     return (
@@ -196,11 +246,13 @@ const MisClientesScreen = ({ navigation }) => {
           </View>
         }
       />
-      <FAB
-        style={styles.fab}
-        icon="plus"
-        onPress={() => navigation.navigate('CrearCliente')}
-      />
+      {!modoPrestar && (
+        <FAB
+          style={styles.fab}
+          icon="plus"
+          onPress={() => navigation.navigate('CrearCliente')}
+        />
+      )}
     </View>
   );
 };
